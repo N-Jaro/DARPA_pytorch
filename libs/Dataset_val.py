@@ -11,16 +11,12 @@ from random import choice, sample
 from Normalization import MinMaxNormalizer, BasicNormalizer, ImageNetNormalizer
 
 class PatchDataGenerator:
-    def __init__(self, batch_size=32, patch_size=256, overlap=15, norm_type='imagenet', valid_patch_rate=0.75,
+    def __init__(self, data_dir='/projects/bbym/shared/data/commonPatchData/', patch_size=256, overlap=15, norm_type='imagenet', valid_patch_rate=0.75,
                     augment=True, vertical_flip_rate=0.4, horizontal_flip_rate=0.4, rotation_rate=0.4, hue_factor=0.2):
 
         self.patch_size = patch_size
         self.overlap = overlap
-        self.train_dir = os.path.join(
-            '/projects/bbym/shared/data/commonPatchData/', str(self.patch_size), str(self.overlap))
-        self.validation_dir = os.path.join('/projects/bbym/shared/data/commonPatchData/validation/', str(self.patch_size),
-                                            str(self.overlap))
-        self.batch_size = batch_size
+        self.data_dir = os.path.join(data_dir, str(self.patch_size), str(self.overlap))
         self.valid_patch_rate = valid_patch_rate
         self.augment = augment
         self.norm_type = norm_type
