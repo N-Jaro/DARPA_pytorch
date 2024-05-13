@@ -5,9 +5,9 @@ import torch
 import random
 import numpy as np
 import torchvision.transforms.functional as TF
+import torchvision.transforms as transforms
 from h5image import H5Image
 from random import choice, sample
-from torchvision.transforms import v2
 from Normalization import MinMaxNormalizer, BasicNormalizer, ImageNetNormalizer
 
 class PatchDataGenerator:
@@ -30,7 +30,7 @@ class PatchDataGenerator:
         self.horizontal_flip_rate = horizontal_flip_rate
         self.rotation_rate = rotation_rate
         self.hue_factor = hue_factor
-        self.legend_trasform = v2.Compose([v2.ToImage(), v2.Resize((self.patch_size, self.patch_size)), v2.ToTensor()])
+        self.legend_trasform = transforms.v2.Compose([transforms.v2.ToImage(), transforms.v2.Resize((self.patch_size, self.patch_size)), transforms.v2.ToTensor()])
 
         self.mapsh5i, self.map_names = self._load_maps(self.data_dir)
         self.patches = self._generate_patches(self.map_names, self.mapsh5i)
