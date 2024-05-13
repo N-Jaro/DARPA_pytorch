@@ -32,8 +32,7 @@ class PatchDataGenerator:
         self.patches = self._generate_patches(self.map_names, self.mapsh5i)
 
         print("*****Training Initialization ****")
-        print("training data dir :", self.train_dir)
-        print("validation data dir :", self.validation_dir)
+        print("data path :", self.data_dir)
         print("*********************************")
 
     def _load_maps(self, h5_dir):
