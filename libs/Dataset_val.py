@@ -142,32 +142,23 @@ class PatchDataGenerator:
         return len(self.patches)
 
     def __getitem__(self, index):
-        # print(self.patches[index])
         map_name, layer_name, row, column = self.patches[index]
-        # Get map patch (using h5py syntax)
         map_patch = torch.from_numpy(self.mapsh5i[map_name].get_patch(row, column, map_name))
         map_patch = map_patch.permute(2, 0, 1)
-        # print("map_patch", map_patch.shape)
 
         # Get legend patch
         legend_patch = self.mapsh5i[map_name].get_legend(map_name, layer_name)
-        # print("legend_patch:", legend_patch.shape)
         legend_patch = resize(legend_patch, (self.patch_size, self.patch_size), preserve_range= True, anti_aliasing=True)
-        # print("legend_patch resized:", legend_patch.shape)
         legend_patch = torch.from_numpy(legend_patch)
         legend_patch_resize = legend_patch.permute(2, 0, 1)
-        # legend_patch_resize = self.legend_trasform(legend_patch)
-        # print("legend_patch_resize", legend_patch_resize.shape)
 
         # Get label
         label_patch = torch.from_numpy(self.mapsh5i[map_name].get_patch(row, column, map_name, layer_name))
         # Add new axis to label patch
         label_patch = label_patch.unsqueeze(0)
-        # print("label_patch", label_patch.shape)
 
         # Apply augmentation
         if self.augment:
-            # map_patch, legend_patch, label_patch = map_patch, legend_patch_resize, label_patch
             map_patch, legend_patch, label_patch = self._augment_data(map_patch, legend_patch_resize, label_patch)
 
         # Normalize the map patch and legend
@@ -175,16 +166,16 @@ class PatchDataGenerator:
             normalizer = ImageNetNormalizer()
             map_patch_norm = normalizer.normalize(map_patch)
             legend_patch_norm = normalizer.normalize(legend_patch)
-            data_patch = np.concatenate([map_patch_norm, legend_patch_norm], axis=0)
+            data_patch = torch.cat([map_patch_norm, legend_patch_norm], dim=0)
 
         elif self.norm_type == 'basic':
             normalizer = MinMaxNormalizer(0, 255, -1, 1)
-            data_patch = np.concatenate([map_patch, legend_patch], axis=0)
+            data_patch = torch.cat([map_patch, legend_patch_resize], dim=0)
             data_patch = normalizer.normalize(data_patch)
 
         else:
             normalizer = BasicNormalizer()
-            data_patch = np.concatenate([map_patch, legend_patch], axis=0)
+            data_patch = torch.cat([map_patch, legend_patch_resize], dim=0)
             data_patch = normalizer.normalize(data_patch)
 
         return data_patch, label_patch
