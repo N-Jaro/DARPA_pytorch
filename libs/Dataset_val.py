@@ -58,7 +58,8 @@ class PatchDataGenerator:
             "Trend_2005_fig6_4.hdf5",
             "Trend_2005_fig7_2.hdf5",
             "Trend_2007_fig10_2.hdf5",
-            "USGS_GF-7_2.hdf5"
+            "USGS_GF-7_2.hdf5",
+            "CA_SanJose.hdf5"
         ]
 
         files_name = [f for f in glob.glob(os.path.join(h5_dir, "*.hdf5")) if os.path.basename(f) not in exclude_files]
@@ -149,7 +150,7 @@ class PatchDataGenerator:
         # Get legend patch
         legend_patch = self.mapsh5i[map_name].get_legend(map_name, layer_name)
         legend_patch = resize(legend_patch, (self.patch_size, self.patch_size), preserve_range= True, anti_aliasing=True)
-        legend_patch = torch.from_numpy(legend_patch)
+        legend_patch = torch.from_numpy(legend_patch).float()
         legend_patch_resize = legend_patch.permute(2, 0, 1)
 
         # Get label
@@ -178,4 +179,4 @@ class PatchDataGenerator:
             data_patch = torch.cat([map_patch, legend_patch_resize], dim=0)
             data_patch = normalizer.normalize(data_patch)
 
-        return data_patch, label_patch
+        return data_patch.float(), label_patch.float()
