@@ -66,6 +66,7 @@ class PatchDataGenerator:
 
         if self.test: #for testing purpose
             files_name = files_name[:3]
+            print(files_name)
 
         for file in files_name:
             mapname = os.path.basename(file).replace(".hdf5", "")
