@@ -161,8 +161,7 @@ def main(args):
         overlap=args.overlap, 
         norm_type=args.norm_type, 
         hue_factor=args.hue_factor, 
-        augment=args.augment, 
-        num_workers=args.num_workers
+        augment=args.augment
     )
     
     trainer = Trainer(
