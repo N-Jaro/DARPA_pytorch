@@ -65,7 +65,7 @@ class PatchDataGenerator:
         files_name = [f for f in glob.glob(os.path.join(h5_dir, "*.hdf5")) if os.path.basename(f) not in exclude_files]
 
         if self.test: #for testing purpose
-            files_name = files_name[:1]
+            files_name = files_name[:3]
 
         for file in files_name:
             mapname = os.path.basename(file).replace(".hdf5", "")
