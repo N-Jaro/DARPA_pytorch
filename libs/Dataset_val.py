@@ -9,7 +9,7 @@ import torchvision.transforms as transforms
 from h5image import H5Image
 from random import choice, sample
 from skimage.transform import resize
-from Normalization import BasicNormalizer, ImageNetNormalizer, MinMaxNormalizer
+from .Normalization import BasicNormalizer, ImageNetNormalizer, MinMaxNormalizer
 
 class PatchDataGenerator:
     def __init__(self, data_dir='/projects/bbym/shared/data/commonPatchData/', patch_size=256, overlap=15, norm_type='imagenet', valid_patch_rate=0.75,
