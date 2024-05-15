@@ -124,7 +124,7 @@ def main(args):
     train_data = DataLoader(train_generator, batch_size=args.batch_size, shuffle=True, num_workers=args.num_workers)
 
     validation_generator = PatchDataGenerator(data_dir=args.val_data_dir, patch_size=args.patch_size, overlap=args.overlap, norm_type=args.norm_type, hue_factor=args.hue_factor, valid_patch_rate=args.valid_patch_rate, augment=args.augment)
-    validation_data = DataLoader(validation_generator, batch_size=args.batch_size, shuffle=True, num_workers=args.num_workers)
+    validation_data = DataLoader(validation_generator, batch_size=args.batch_size, shuffle=False, num_workers=args.num_workers)
 
     # Initialize model
     model = U_Transformer(in_channels=6, classes=1)
