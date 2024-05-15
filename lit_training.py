@@ -156,7 +156,7 @@ def main(args):
         rate_decay=0.005, 
         dynamic=args.dynamic_valid_patch_rate, 
         train_data_dir=args.train_data_dir, 
-        val_data_dir=args.val_data_dir, 
+        validation_data_dir=args.val_data_dir, 
         patch_size=args.patch_size, 
         overlap=args.overlap, 
         norm_type=args.norm_type, 
