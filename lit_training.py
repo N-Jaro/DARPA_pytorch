@@ -179,7 +179,7 @@ if __name__ == '__main__':
     data_group.add_argument('--norm_type', type=str, choices=['basic', 'imagenet', 'none'], default='basic', help='Normalization type')
     data_group.add_argument('--hue_factor', type=float, default=0.2, help='Hue factor for data augmentation')
     data_group.add_argument('--valid_patch_rate', type=float, default=1, help='Initial valid patch rate')
-    data_group.add_argument('--augment', type=bool, default=True, type=lambda x: (str(x).lower() == 'true'), help='Whether to use data augmentation')
+    data_group.add_argument('--augment', default=True, type=lambda x: (str(x).lower() == 'true'), help='Whether to use data augmentation')
     data_group.add_argument('--num_workers', type=int, default=12, help='Number of workers for data loader')
 
     # Training-related arguments
