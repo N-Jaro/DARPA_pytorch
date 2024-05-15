@@ -72,31 +72,35 @@ class PatchDataGenerator:
 
     def _generate_patches(self, map_names, h5image_obj):
         map_patches = []
+
         for map_name in map_names:
             if map_name in h5image_obj:
                 patches = h5image_obj[map_name].get_patches(map_name)
                 cor = h5image_obj[map_name].get_map_corners(map_name)
 
-            # Filter patches based on label presence:
-            valid_patches = []
-            for layer in patches:
-                if layer.endswith('_poly'):
-                    for row, column in patches[layer]:
-                        # Retrieve the label patch for the given row, column, map name, and layer
-                        label_patch = h5image_obj[map_name].get_patch(row, column, map_name, layer)
-                        # Count the pixels of interest (value 1) in the label patch
-                        if np.sum(label_patch) >= 100:  # Check if the label patch has exactly 100 pixels of interest
-                            valid_patches.append((map_name, layer, row, column))
+                # Filter patches based on label presence:
+                valid_patches = [
+                    (map_name, layer, row, column)
+                    for layer in patches if layer.endswith('_poly')
+                    for row, column in patches[layer]
+                    if np.sum(h5image_obj[map_name].get_patch(row, column, map_name, layer)) >= 100
+                ]
 
-            # Sample patches with a mix of valid and random locations:
-            valid_layers = [key for key in patches.keys() if key.endswith('_poly')]
-            random_patches = [(map_name, choice(valid_layers),
-                                random.randint(cor[0][0], cor[1][0]),
-                                random.randint(cor[0][1], cor[1][1]))
-                                for _ in range(len(valid_patches))]
+                # Sample patches with a mix of valid and random locations:
+                valid_layers = [key for key in patches.keys() if key.endswith('_poly')]
+                random_patches = [
+                    (map_name, choice(valid_layers),
+                    random.randint(cor[0][0], cor[1][0]),
+                    random.randint(cor[0][1], cor[1][1]))
+                    for _ in range(len(valid_patches))
+                ]
 
-            n = len(valid_patches)
-            map_patches += sample(valid_patches, int(n * self.valid_patch_rate)) +  sample(random_patches, int(n * (1 - self.valid_patch_rate)))
+                n = len(valid_patches)
+                valid_sample_size = int(n * self.valid_patch_rate)
+                random_sample_size = int(n * (1 - self.valid_patch_rate))
+
+                map_patches.extend(sample(valid_patches, valid_sample_size))
+                map_patches.extend(sample(random_patches, random_sample_size))
 
         return map_patches
 
