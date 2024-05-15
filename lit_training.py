@@ -138,7 +138,7 @@ def main(args):
     # Model checkpoint callback
     checkpoint_callback = ModelCheckpoint(
         monitor='val_loss',
-        dirpath=args.checkpoint_dir,
+        dirpath= os.path.join(args.checkpoint_dir, args.name_id),
         filename='u-transformer-{epoch:02d}-{val_loss:.2f}',
         save_top_k=3,
         mode='min',
