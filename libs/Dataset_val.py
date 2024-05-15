@@ -189,4 +189,4 @@ class PatchDataGenerator:
             data_patch = np.concatenate([map_patch, legend_patch], axis=0)
             data_patch = normalizer.normalize(data_patch)
 
-        return data_patch.double(), label_patch.double()
+        return data_patch, label_patch
