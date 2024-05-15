@@ -13,7 +13,7 @@ from .Normalization import BasicNormalizer, ImageNetNormalizer, MinMaxNormalizer
 
 class PatchDataGenerator:
     def __init__(self, data_dir='/projects/bbym/shared/data/commonPatchData/', patch_size=256, overlap=15, norm_type='imagenet', valid_patch_rate=0.75,
-                    augment=True, vertical_flip_rate=0.4, horizontal_flip_rate=0.4, rotation_rate=0.4, hue_factor=0.2, test=False ):
+                    augment=True, vertical_flip_rate=0.4, horizontal_flip_rate=0.4, rotation_rate=0.4, hue_factor=0.2):
 
         self.patch_size = patch_size
         self.overlap = overlap
@@ -27,7 +27,6 @@ class PatchDataGenerator:
         self.horizontal_flip_rate = horizontal_flip_rate
         self.rotation_rate = rotation_rate
         self.hue_factor = hue_factor
-        self.test=test
         self.legend_trasform =transforms.Compose([transforms.ToPILImage(), transforms.Resize((self.patch_size, self.patch_size))])
 
         self.mapsh5i, self.map_names = self._load_maps(self.data_dir)
@@ -64,9 +63,8 @@ class PatchDataGenerator:
 
         files_name = [f for f in glob.glob(os.path.join(h5_dir, "*.hdf5")) if os.path.basename(f) not in exclude_files]
 
-        if self.test: #for testing purpose
-            files_name = files_name[:3]
-            print(files_name)
+        if self.test:
+            files_name = files_name[:1]
 
         for file in files_name:
             mapname = os.path.basename(file).replace(".hdf5", "")
@@ -189,4 +187,4 @@ class PatchDataGenerator:
             data_patch = np.concatenate([map_patch, legend_patch], axis=0)
             data_patch = normalizer.normalize(data_patch)
 
-        return data_patch, label_patch
+        return data_patch.double(), label_patch.double()
