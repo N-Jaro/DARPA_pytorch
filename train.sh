@@ -6,7 +6,7 @@
 #SBATCH --nodes=1
 #SBATCH --cpus-per-task=16
 #SBATCH --gpus-per-node=2
-#SBATCH --output=/projects/bbym/nathanj/attentionUnet/u_transformer_%j.out         # Output file name (%j expands to jobID)
+#SBATCH --output=u_transformer_%j.out         # Output file name (%j expands to jobID)
 #SBATCH --error=u_transformer_%j.err          # Error file name (%j expands to jobID)
 
 # Load required modules
