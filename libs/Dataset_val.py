@@ -18,6 +18,7 @@ class PatchDataGenerator:
         self.patch_size = patch_size
         self.overlap = overlap
         self.data_dir = os.path.join(data_dir, str(self.patch_size), str(self.overlap))
+        print("data_dir:", self.data_dir)
         self.valid_patch_rate = valid_patch_rate
         self.augment = augment
         self.norm_type = norm_type

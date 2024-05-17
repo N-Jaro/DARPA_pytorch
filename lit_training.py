@@ -72,7 +72,7 @@ class LitUTransformer(LightningModule):
         return optimizer
 
 class ValidPatchRateCallback(Callback):
-    def __init__(self, train_data_dir, validation_data_dir, patch_size, overlap, norm_type, hue_factor, augment, initial_patch_rate=1.0, rate_decay=0.005, dynamic=False):
+    def __init__(self, train_data_dir, validation_data_dir, patch_size=256, overlap=15, norm_type='-1', hue_factor=0.2, augment=True, initial_patch_rate=1.0, rate_decay=0.005, dynamic=False):
         super().__init__()
         self.initial_patch_rate = initial_patch_rate
         self.rate_decay = rate_decay
@@ -125,12 +125,42 @@ def main(args):
         config=config
     )
 
-    # Create initial dataset and dataloader
-    train_generator = PatchDataGenerator(data_dir=args.train_data_dir, patch_size=args.patch_size, overlap=args.overlap, norm_type=args.norm_type, hue_factor=args.hue_factor, valid_patch_rate=args.valid_patch_rate, augment=args.augment)
-    train_data = DataLoader(train_generator, batch_size=args.batch_size, shuffle=True, num_workers=args.num_workers)
+    # Define the shape of the tensor
+    B = args.batch_size  # Batch size
+    C = 6  # Number of channels
+    H = 256  # Height
+    W = 256  # Width
+    num_samples = 100  # Number of samples in the dataset
 
-    validation_generator = PatchDataGenerator(data_dir=args.val_data_dir, patch_size=args.patch_size, overlap=args.overlap, norm_type=args.norm_type, hue_factor=args.hue_factor, valid_patch_rate=args.valid_patch_rate, augment=args.augment)
-    validation_data = DataLoader(validation_generator, batch_size=args.batch_size, shuffle=False, num_workers=args.num_workers)
+    # Create a custom dataset class
+    class DummyDataset(Dataset):
+        def __init__(self, num_samples, C, H, W):
+            self.num_samples = num_samples
+            self.C = C
+            self.H = H
+            self.W = W
+
+        def __len__(self):
+            return self.num_samples
+
+        def __getitem__(self, idx):
+            # Create a dummy input tensor with random values
+            dummy_input = torch.randn(self.C, self.H, self.W)
+            return dummy_input
+
+    # Create an instance of the dataset
+    dummy_dataset = DummyDataset(num_samples, C, H, W)
+
+    # Create a DataLoader
+    train_data = DataLoader(dummy_dataset, batch_size=B, shuffle=True)
+    validation_data = DataLoader(dummy_dataset, batch_size=B, shuffle=False)
+
+    # # Create initial dataset and dataloader
+    # train_generator = PatchDataGenerator(data_dir=args.train_data_dir, patch_size=args.patch_size, overlap=args.overlap, norm_type=args.norm_type, hue_factor=args.hue_factor, valid_patch_rate=args.valid_patch_rate, augment=args.augment)
+    # train_data = DataLoader(train_generator, batch_size=args.batch_size, shuffle=True, num_workers=args.num_workers)
+
+    # validation_generator = PatchDataGenerator(data_dir=args.val_data_dir, patch_size=args.patch_size, overlap=args.overlap, norm_type=args.norm_type, hue_factor=args.hue_factor, valid_patch_rate=args.valid_patch_rate, augment=args.augment)
+    # validation_data = DataLoader(validation_generator, batch_size=args.batch_size, shuffle=False, num_workers=args.num_workers)
 
     # Initialize model
     model = U_Transformer(in_channels=6, classes=1)
