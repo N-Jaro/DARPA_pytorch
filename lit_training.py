@@ -77,13 +77,13 @@ class ValidPatchRateCallback(Callback):
         self.initial_patch_rate = initial_patch_rate
         self.rate_decay = rate_decay
         self.dynamic = dynamic
-        self.train_data_dir= train_data_dir, 
-        self.validation_data_dir= validation_data_dir, 
-        self.patch_size=patch_size, 
-        self.overlap=overlap, 
-        self.norm_type=norm_type, 
-        self.hue_factor=hue_factor, 
-        self.augment=augment, 
+        self.train_data_dir= train_data_dir
+        self.validation_data_dir= validation_data_dir
+        self.patch_size=patch_size
+        self.overlap=overlap
+        self.norm_type=norm_type
+        self.hue_factor=hue_factor
+        self.augment=augment
 
     def on_train_epoch_start(self, trainer, pl_module):
         epoch = trainer.current_epoch
