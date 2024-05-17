@@ -2,7 +2,6 @@ import os
 import argparse
 
 import torch
-from torch.utils.data import Dataset, DataLoader
 from pytorch_lightning import Trainer
 from pytorch_lightning.callbacks import ModelCheckpoint
 from pytorch_lightning.loggers import WandbLogger
@@ -26,22 +25,9 @@ mlflow.set_tracking_uri(uri=tracking_uri)
 mlflow.set_experiment("nathan")
 
 def main(args):
+
     # Start an MLflow run
     with mlflow.start_run():
-        # Log parameters
-        mlflow.log_params({
-            'batch_size': args.batch_size,
-            'learning_rate': args.learning_rate,
-            'num_epochs': args.num_epochs,
-            'patch_size': args.patch_size,
-            'overlap': args.overlap,
-            'norm_type': args.norm_type,
-            'hue_factor': args.hue_factor,
-            'valid_patch_rate': args.valid_patch_rate,
-            'augment': args.augment,
-            'num_workers': args.num_workers,
-            'dynamic_valid_patch_rate': args.dynamic_valid_patch_rate
-        })
 
         # Config for wandb
         config = {
@@ -58,6 +44,9 @@ def main(args):
             'dynamic_valid_patch_rate': args.dynamic_valid_patch_rate
         }
 
+        # Log parameters
+        mlflow.log_params(config)
+
         # Initialize wandb
         wandb.init(
             project=args.project_name,
@@ -65,37 +54,6 @@ def main(args):
             name=args.name_id,
             config=config
         )
-
-        # Define the shape of the tensor
-        B = args.batch_size  # Batch size
-        C = 6  # Number of channels
-        H = args.patch_size  # Height
-        W = args.patch_size  # Width
-        num_samples = 100  # Number of samples in the dataset
-
-        class DummyDataset(Dataset):
-            def __init__(self, num_samples, B, C, H, W):
-                self.num_samples = num_samples
-                self.B = B
-                self.C = C
-                self.H = H
-                self.W = W
-
-            def __len__(self):
-                return self.num_samples
-
-            def __getitem__(self, idx):
-                # Generate random input data and label
-                input_data = torch.randn(self.C, self.H, self.W).float() 
-                label = torch.randint(0, 2, (1, self.H, self.W)).float()  # Binary labels
-                return input_data, label
-
-        # Create an instance of the dataset
-        dummy_dataset = DummyDataset(num_samples, B, C, H, W)
-
-        # Create a DataLoader
-        train_data = DataLoader(dummy_dataset, batch_size=B, shuffle=True)
-        validation_data = DataLoader(dummy_dataset, batch_size=B, shuffle=False)
 
         # Initialize model
         model = U_Transformer(in_channels=6, classes=1)
