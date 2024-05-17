@@ -86,7 +86,7 @@ class LitUTransformer(LightningModule):
         return optimizer
 
 class ValidPatchRateCallback(Callback):
-    def __init__(self, train_data_dir, validation_data_dir, patch_size=256, overlap=15, norm_type='-1', hue_factor=0.2, augment=True, initial_patch_rate=1.0, rate_decay=0.005, dynamic=False):
+    def __init__(self, train_data_dir, validation_data_dir, batch_size, num_workers=12, patch_size=256, overlap=15, norm_type='-1', hue_factor=0.2, augment=True, initial_patch_rate=1.0, rate_decay=0.005, dynamic=False):
         super().__init__()
         self.initial_patch_rate = initial_patch_rate
         self.rate_decay = rate_decay
@@ -98,6 +98,8 @@ class ValidPatchRateCallback(Callback):
         self.norm_type=norm_type
         self.hue_factor=hue_factor
         self.augment=augment
+        self.num_workers=num_workers
+        self.batch_size=batch_size
 
     def on_train_epoch_start(self, trainer, pl_module):
         epoch = trainer.current_epoch
@@ -107,10 +109,10 @@ class ValidPatchRateCallback(Callback):
             
             # Reinitialize the datasets and dataloaders with the new valid_patch_rate
             train_generator = PatchDataGenerator(data_dir=self.train_data_dir, patch_size=self.patch_size, overlap=self.overlap, norm_type=self.norm_type, hue_factor=self.hue_factor, augment=self.augment, valid_patch_rate = new_patch_rate)
-            trainer.datamodule.train_dataloader = DataLoader(train_generator, batch_size=trainer.datamodule.batch_size, shuffle=True, num_workers=trainer.datamodule.num_workers)
+            trainer.datamodule.train_dataloader = DataLoader(train_generator, batch_size=self.batch_size, shuffle=True, num_workers=self.num_workers)
 
             validation_generator = PatchDataGenerator(data_dir=self.validation_data_dir, patch_size=self.patch_size, overlap=self.overlap, norm_type=self.norm_type, hue_factor=self.hue_factor, augment=self.augment, valid_patch_rate = new_patch_rate)
-            trainer.datamodule.val_dataloader = DataLoader(validation_generator, batch_size=trainer.datamodule.batch_size, shuffle=False, num_workers=trainer.datamodule.num_workers)
+            trainer.datamodule.val_dataloader = DataLoader(validation_generator, batch_size=self.batch_size, shuffle=False, num_workers=self.num_workers)
 
             # Log the new valid_patch_rate
             pl_module.log('valid_patch_rate', new_patch_rate)
@@ -224,7 +226,9 @@ def main(args):
             overlap=args.overlap, 
             norm_type=args.norm_type, 
             hue_factor=args.hue_factor, 
-            augment=args.augment
+            augment=args.augment,
+            num_workers=args.num_workers,
+            batch_size=args.batch_size
         )
         
         trainer = Trainer(
