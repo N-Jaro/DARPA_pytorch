@@ -9,7 +9,7 @@
 #SBATCH --output=u_transformer_%j.out   
 
 # Load required modules
-module load anaconda3_gpu cudnn
+module load anaconda3_gpu cudnn/8.6.163-11.7
 pip install lightning
 
 # Variables for the script
@@ -31,7 +31,7 @@ NUM_WORKERS=12
 DYNAMIC_VALID_PATCH_RATE=true
 
 # Run the training script
-python lit_training.py \
+python -W ignore lit_training.py \
     --train_data_dir $TRAIN_DATA_DIR \
     --val_data_dir $VAL_DATA_DIR \
     --checkpoint_dir $CHECKPOINT_DIR \
