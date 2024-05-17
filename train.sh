@@ -18,7 +18,7 @@ VAL_DATA_DIR="/projects/bbym/shared/data/commonPatchData/validation"
 CHECKPOINT_DIR="checkpoints"
 PROJECT_NAME="U_Transformer_Segmentation"
 NAME_ID="Utransformer_256_32_w_val"
-BATCH_SIZE=32
+BATCH_SIZE=16
 LEARNING_RATE=1e-3
 NUM_EPOCHS=150
 PATCH_SIZE=256
@@ -26,12 +26,12 @@ OVERLAP=32
 NORM_TYPE="basic"
 HUE_FACTOR=0.2
 VALID_PATCH_RATE=1
-AUGMENT=true
+AUGMENT=True
 NUM_WORKERS=12
-DYNAMIC_VALID_PATCH_RATE=true
+DYNAMIC_VALID_PATCH_RATE=True
 
 # Run the training script
-python -W ignore lit_training.py \
+python -W ignore training_updated.py \
     --train_data_dir $TRAIN_DATA_DIR \
     --val_data_dir $VAL_DATA_DIR \
     --checkpoint_dir $CHECKPOINT_DIR \
