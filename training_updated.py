@@ -97,6 +97,10 @@ def main(args):
         trainer = Trainer(
             max_epochs=args.num_epochs,
             callbacks=[checkpoint_callback, valid_patch_callback],
+            accelerator="gpu",
+            devices=2,  # <-- NEW
+            strategy="ddp",  # <-- NEW
+            precision="16",
             logger=wandb_logger
         )
 
