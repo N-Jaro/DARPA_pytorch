@@ -128,14 +128,14 @@ def main(args):
     # Define the shape of the tensor
     B = args.batch_size  # Batch size
     C = 6  # Number of channels
-    H = 256  # Height
-    W = 256  # Width
+    H = args.patch_size  # Height
+    W = args.patch_size  # Width
     num_samples = 100  # Number of samples in the dataset
 
-    # Create a custom dataset class
     class DummyDataset(Dataset):
-        def __init__(self, num_samples, C, H, W):
+        def __init__(self, num_samples, B, C, H, W):
             self.num_samples = num_samples
+            self.B = B
             self.C = C
             self.H = H
             self.W = W
@@ -144,12 +144,14 @@ def main(args):
             return self.num_samples
 
         def __getitem__(self, idx):
-            # Create a dummy input tensor with random values
-            dummy_input = torch.randn(self.C, self.H, self.W)
-            return dummy_input
+            # Generate random input data and label
+            input_data = torch.randn(self.C, self.H, self.W).float() 
+            label = torch.randint(0, 2, (1, self.H, self.W)).float()  # Binary labels
+            return input_data, label
+
 
     # Create an instance of the dataset
-    dummy_dataset = DummyDataset(num_samples, C, H, W)
+    dummy_dataset = DummyDataset(num_samples, B, C, H, W)
 
     # Create a DataLoader
     train_data = DataLoader(dummy_dataset, batch_size=B, shuffle=True)
