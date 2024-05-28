@@ -86,17 +86,17 @@ def main(args):
             num_workers=args.num_workers,
             valid_patch_rate=args.valid_patch_rate
         )
-
-        # Trainer
+        
         valid_patch_callback = ValidPatchRateCallback(
             initial_patch_rate=args.valid_patch_rate, 
             rate_decay=0.005, 
             dynamic=args.dynamic_valid_patch_rate
         )
-        
+
+        # Trainer
         trainer = Trainer(
             max_epochs=args.num_epochs,
-            callbacks=[checkpoint_callback, valid_patch_callback],
+            callbacks=[checkpoint_callback],
             accelerator="gpu",
             devices=2,  # <-- NEW
             strategy="ddp",  # <-- NEW
