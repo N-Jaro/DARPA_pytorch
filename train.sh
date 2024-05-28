@@ -9,15 +9,15 @@
 #SBATCH --output=u_transformer_%j.out   
 
 # Load required modules
-module load anaconda3_gpu cudnn/8.6.163-11.7
-pip install lightning
+module load anaconda3_gpu
+pip install --user lightning
 
 # Variables for the script
 TRAIN_DATA_DIR="/projects/bbym/shared/data/commonPatchData/"
 VAL_DATA_DIR="/projects/bbym/shared/data/commonPatchData/validation"
 CHECKPOINT_DIR="checkpoints"
 PROJECT_NAME="U_Transformer_Segmentation"
-NAME_ID="Utransformer_256_32_w_val"
+NAME_ID="Utransformer_256_32_w_val_constant_rate"
 BATCH_SIZE=16
 LEARNING_RATE=1e-3
 NUM_EPOCHS=150
@@ -25,7 +25,7 @@ PATCH_SIZE=256
 OVERLAP=32
 NORM_TYPE="basic"
 HUE_FACTOR=0.2
-VALID_PATCH_RATE=1
+VALID_PATCH_RATE=0.75
 AUGMENT=True
 NUM_WORKERS=12
 DYNAMIC_VALID_PATCH_RATE=True
