@@ -28,7 +28,7 @@ HUE_FACTOR=0.2
 VALID_PATCH_RATE=0.75
 AUGMENT=True
 NUM_WORKERS=12
-DYNAMIC_VALID_PATCH_RATE=True
+DYNAMIC_VALID_PATCH_RATE=False
 
 # Run the training script
 python -W ignore training_updated.py \
