@@ -10,7 +10,7 @@
 
 # Load required modules
 module load anaconda3_gpu
-pip install --user lightning
+# pip install --user lightning
 
 # Variables for the script
 TRAIN_DATA_DIR="/projects/bbym/shared/data/commonPatchData/"
