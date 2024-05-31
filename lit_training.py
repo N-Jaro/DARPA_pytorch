@@ -86,7 +86,7 @@ class LitUTransformer(LightningModule):
         return optimizer
 
 class ValidPatchRateCallback(Callback):
-    def __init__(self, train_data_dir, validation_data_dir, batch_size, num_workers=12, patch_size=256, overlap=15, norm_type='-1', hue_factor=0.2, augment=True, initial_patch_rate=1.0, rate_decay=0.005, dynamic=False):
+    def __init__(self, train_data_dir, validation_data_dir, batch_size, num_workers=12, patch_size=256, overlap=15, norm_type='-1', hue_factor=0.2, augment=True, initial_patch_rate=1.0, rate_decay=0.005, dynamic=True):
         super().__init__()
         self.initial_patch_rate = initial_patch_rate
         self.rate_decay = rate_decay
@@ -104,15 +104,12 @@ class ValidPatchRateCallback(Callback):
     def on_train_epoch_start(self, trainer, pl_module):
         epoch = trainer.current_epoch
 
-        if self.dynamic or epoch == 0:
+        if self.dynamic:
             new_patch_rate = max(0, self.initial_patch_rate - epoch * self.rate_decay)
             
             # Reinitialize the datasets and dataloaders with the new valid_patch_rate
             train_generator = PatchDataGenerator(data_dir=self.train_data_dir, patch_size=self.patch_size, overlap=self.overlap, norm_type=self.norm_type, hue_factor=self.hue_factor, augment=self.augment, valid_patch_rate = new_patch_rate)
             trainer.datamodule.train_dataloader = DataLoader(train_generator, batch_size=self.batch_size, shuffle=True, num_workers=self.num_workers)
-
-            validation_generator = PatchDataGenerator(data_dir=self.validation_data_dir, patch_size=self.patch_size, overlap=self.overlap, norm_type=self.norm_type, hue_factor=self.hue_factor, augment=self.augment, valid_patch_rate = new_patch_rate)
-            trainer.datamodule.val_dataloader = DataLoader(validation_generator, batch_size=self.batch_size, shuffle=False, num_workers=self.num_workers)
 
             # Log the new valid_patch_rate
             pl_module.log('valid_patch_rate', new_patch_rate)
