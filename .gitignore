@@ -1,0 +1,6 @@
+wandb/
+*.err
+*.out
+checkpoints/
+__pycache__/
+*_checkpoints
