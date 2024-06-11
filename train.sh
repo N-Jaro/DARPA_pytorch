@@ -1,6 +1,6 @@
 #!/bin/bash
 #SBATCH --job-name=u_transformer_training   
-#SBATCH --time=20:00:00
+#SBATCH --time=48:00:00
 #SBATCH --partition=a100
 #SBATCH --account=bbym-hydro
 #SBATCH --nodes=1
