@@ -4,6 +4,7 @@ import h5py
 import torch
 import random
 import numpy as np
+import torch.utils.data as data
 import torchvision.transforms.functional as TF
 import torchvision.transforms as transforms
 from h5image import H5Image
@@ -11,7 +12,7 @@ from random import choice, sample
 from skimage.transform import resize
 from .Normalization import BasicNormalizer, ImageNetNormalizer, MinMaxNormalizer
 
-class PatchDataGenerator:
+class PatchDataGenerator(data.Dataset):
     def __init__(self, data_dir='/projects/bbym/shared/data/commonPatchData/', patch_size=256, overlap=15, norm_type='imagenet', valid_patch_rate=0.75,
                     augment=True, vertical_flip_rate=0.4, horizontal_flip_rate=0.4, rotation_rate=0.4, hue_factor=0.2):
 
@@ -64,7 +65,8 @@ class PatchDataGenerator:
             "CA_SanJose.hdf5"
         ]
 
-        files_name = [f for f in glob.glob(os.path.join(h5_dir, "*.hdf5")) if os.path.basename(f) not in exclude_files]
+        # files_name = [f for f in glob.glob(os.path.join(h5_dir, "*.hdf5")) if os.path.basename(f) not in exclude_files][10:12] #for testing
+        files_name = [f for f in glob.glob(os.path.join(h5_dir, "*.hdf5")) if os.path.basename(f) not in exclude_files] #for production
 
         # if self.test:
         #     files_name = files_name[:1]
