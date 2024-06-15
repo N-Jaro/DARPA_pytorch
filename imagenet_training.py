@@ -1,5 +1,6 @@
 import os
 import argparse
+from datetime import datetime
 
 import torch
 from pytorch_lightning import Trainer
@@ -12,11 +13,7 @@ import segmentation_models_pytorch as smp
 import wandb
 import mlflow
 
-# from models.unet import UNet
-# from models.unetTransformer import U_Transformer
-
 from libs.Dataset_val import PatchDataGenerator
-from libs.callbacks import ValidPatchRateCallback
 from models.lit_training import LitTraining
 
 os.environ['PYTORCH_CUDA_ALLOC_CONF'] = 'max_split_size_mb:512'
@@ -61,8 +58,10 @@ def initialize_data_loaders(args):
 
 
 def main(args):
-
     with mlflow.start_run():
+        # Append date and time to name_id
+        current_time = datetime.now().strftime("%Y%m%d_%H%M%S")
+        name_id = f"{args.name_id}_{args.backbone}_{current_time}"
 
         config = {
             'batch_size': args.batch_size,
@@ -75,35 +74,37 @@ def main(args):
             'valid_patch_rate': args.valid_patch_rate,
             'augment': args.augment,
             'num_workers': args.num_workers,
-            'dynamic_valid_patch_rate': args.dynamic_valid_patch_rate
+            'dynamic_valid_patch_rate': args.dynamic_valid_patch_rate,
+            'name_id': name_id,
+            'backbone': args.backbone
         }
 
         mlflow.log_params(config)
 
         model = smp.Unet(
-            encoder_name="resnet34",
+            encoder_name=args.backbone,
             encoder_weights="imagenet",
             in_channels=6,
             classes=1,
         )
 
         lit_model = LitTraining(model, args.learning_rate)
-        
+
         wandb_logger = WandbLogger(
             project=args.project_name,
             sync_tensorboard=False,
-            name=args.name_id,
+            name=name_id,
             config=config
         )
 
         checkpoint_callback = ModelCheckpoint(
             monitor='val/loss',
-            dirpath=os.path.join(args.checkpoint_dir, args.name_id),
-            filename='u-net-{val/loss:.2f}',
+            dirpath=os.path.join(args.checkpoint_dir, name_id),
+            filename= args.backbone+'-{val/loss:.2f}',
             save_top_k=3,
             mode='min',
         )
-        early_stop_callback = EarlyStopping(monitor="val/loss", min_delta=0.00, patience=50, verbose=True, mode="min")
+        early_stop_callback = EarlyStopping(monitor="val/loss", min_delta=0.05, patience=50, verbose=True, mode="min")
 
         train_loader, val_loader = initialize_data_loaders(args)
 
@@ -135,13 +136,14 @@ if __name__ == '__main__':
     training_group = parser.add_argument_group('Training')
     training_group.add_argument('--batch_size', type=int, default=16, help='Batch size for training')
     training_group.add_argument('--learning_rate', type=float, default=1e-3, help='Learning rate')
-    training_group.add_argument('--num_epochs', type=int, default=3, help='Number of epochs to train')
-    training_group.add_argument('--dynamic_valid_patch_rate', default=True, type=lambda x: (str(x).lower() == 'true'), help='Dynamically update valid_patch_rate each epoch')
+    training_group.add_argument('--num_epochs', type=int, default=15, help='Number of epochs to train')
+    training_group.add_argument('--dynamic_valid_patch_rate', default=False, type=lambda x: (str(x).lower() == 'true'), help='Dynamically update valid_patch_rate each epoch')
 
     log_group = parser.add_argument_group('Logging')
     log_group.add_argument('--checkpoint_dir', type=str, default='checkpoints', help='Directory to save checkpoints')
     log_group.add_argument('--project_name', type=str, default='ImageNet_Segmentation', help='WandB project name')
     log_group.add_argument('--name_id', type=str, default='experiment', help='WandB run name')
+    log_group.add_argument('--backbone', type=str, default='resnet50', help='Backbone model for U-Net')
 
     args = parser.parse_args()
 
