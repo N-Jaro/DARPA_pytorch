@@ -164,8 +164,8 @@ if __name__ == '__main__':
 
     # Data-related arguments
     data_group = parser.add_argument_group('Data')
-    data_group.add_argument('--train_data_dir', type=str, default='/projects/bbym/shared/data/commonPatchData/', help='Directory for training data')
-    data_group.add_argument('--val_data_dir', type=str, default='/projects/bbym/shared/data/commonPatchData/validation/', help='Directory for validation data')
+    data_group.add_argument('--train_data_dir', type=str, default='/projects/bcxi/nathanj/commonPatchData/', help='Directory for training data')
+    data_group.add_argument('--val_data_dir', type=str, default='/projects/bcxi/nathanj/commonPatchData/validation/', help='Directory for validation data')
     data_group.add_argument('--patch_size', type=int, default=256, help='Patch size for data generator')
     data_group.add_argument('--overlap', type=int, default=15, help='Overlap for patches')
     data_group.add_argument('--norm_type', type=str, choices=['basic', 'imagenet', 'none'], default='basic', help='Normalization type')

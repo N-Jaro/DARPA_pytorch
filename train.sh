@@ -13,8 +13,8 @@ module load anaconda3_gpu
 # pip install --user lightning
 
 # Variables for the script
-TRAIN_DATA_DIR="/projects/bbym/shared/data/commonPatchData/"
-VAL_DATA_DIR="/projects/bbym/shared/data/commonPatchData/validation"
+TRAIN_DATA_DIR="/projects/bcxi/nathanj/commonPatchData/"
+VAL_DATA_DIR="/projects/bcxi/nathanj/commonPatchData/validation"
 CHECKPOINT_DIR="checkpoints"
 PROJECT_NAME="U_Transformer_Segmentation"
 NAME_ID="Utransformer_256_32_w_val_constant_rate"

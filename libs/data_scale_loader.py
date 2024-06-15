@@ -168,7 +168,7 @@ class ScaleDataGenerator(Dataset):
     @staticmethod
     def create_train_dataset(batch_size=32, patch_size=256, overlap=15, norm_type='imagenet', valid_patch_rate=0.75,
                              augment=True, vertical_flip_rate=0.4, horizontal_flip_rate=0.4, rotation_rate=0.4, hue_factor=0.2, test_flag=False):
-        train_dir = '/projects/bbym/shared/data/commonPatchData/'
+        train_dir = '/projects/bcxi/nathanj/commonPatchData/'
         mapsh5i, map_names = PatchDataGenerator._load_maps_static(train_dir, patch_size, overlap)
         return DataLoader(PatchDataGenerator(map_names, mapsh5i, batch_size, patch_size, overlap, norm_type, valid_patch_rate,
                                              augment, vertical_flip_rate, horizontal_flip_rate, rotation_rate, hue_factor, test_flag), 
@@ -177,7 +177,7 @@ class ScaleDataGenerator(Dataset):
     @staticmethod
     def create_validation_dataset(batch_size=32, patch_size=256, overlap=15, norm_type='imagenet', valid_patch_rate=0.75,
                                   augment=True, vertical_flip_rate=0.4, horizontal_flip_rate=0.4, rotation_rate=0.4, hue_factor=0.2, test_flag=False):
-        validation_dir = '/projects/bbym/shared/data/commonPatchData/validation/'
+        validation_dir = '/projects/bcxi/nathanj/commonPatchData/validation/'
         mapsh5i, map_names = PatchDataGenerator._load_maps_static(validation_dir, patch_size, overlap)
         return DataLoader(PatchDataGenerator(map_names, mapsh5i, batch_size, patch_size, overlap, norm_type, valid_patch_rate,
                                              augment, vertical_flip_rate, horizontal_flip_rate, rotation_rate, hue_factor, test_flag), 

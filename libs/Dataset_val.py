@@ -13,7 +13,7 @@ from skimage.transform import resize
 from .Normalization import BasicNormalizer, ImageNetNormalizer, MinMaxNormalizer
 
 class PatchDataGenerator(data.Dataset):
-    def __init__(self, data_dir='/projects/bbym/shared/data/commonPatchData/', patch_size=256, overlap=15, norm_type='imagenet', valid_patch_rate=0.75,
+    def __init__(self, data_dir='/projects/bcxi/nathanj/commonPatchData/', patch_size=256, overlap=15, norm_type='imagenet', valid_patch_rate=0.75,
                     augment=True, vertical_flip_rate=0.4, horizontal_flip_rate=0.4, rotation_rate=0.4, hue_factor=0.2):
 
         self.patch_size = patch_size
