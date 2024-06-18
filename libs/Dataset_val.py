@@ -13,7 +13,7 @@ from skimage.transform import resize
 from .Normalization import BasicNormalizer, ImageNetNormalizer, MinMaxNormalizer
 
 class PatchDataGenerator(data.Dataset):
-    def __init__(self, data_dir='/projects/bcxi/nathanj/commonPatchData/', patch_size=256, overlap=15, norm_type='imagenet', valid_patch_rate=0.75,
+    def __init__(self, data_dir='/projects/bbym/shared/data/commonPatchData/', patch_size=256, overlap=15, norm_type='basic', valid_patch_rate=0.75,
                     augment=True, vertical_flip_rate=0.4, horizontal_flip_rate=0.4, rotation_rate=0.4, hue_factor=0.2):
 
         self.patch_size = patch_size
@@ -175,12 +175,12 @@ class PatchDataGenerator(data.Dataset):
 
         elif self.norm_type == 'basic':
             normalizer = MinMaxNormalizer(0, 255, -1, 1)
-            data_patch = torch.cat([map_patch, legend_patch_resize], dim=0)
+            data_patch = torch.cat([map_patch, legend_patch], dim=0)
             data_patch = normalizer.normalize(data_patch)
 
         else:
             normalizer = BasicNormalizer()
-            data_patch = torch.cat([map_patch, legend_patch_resize], dim=0)
+            data_patch = torch.cat([map_patch, legend_patch], dim=0)
             data_patch = normalizer.normalize(data_patch)
 
         return data_patch.float(), label_patch.float()
