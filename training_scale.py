@@ -29,31 +29,39 @@ mlflow.set_experiment("nathan")
 
 
 def initialize_data_loaders(args):
-    train_loader = ScaleDataGenerator.create_train_dataset(
+
+    train_dataset = ScaleDataGenerator(
+        data_dir=args.train_data_dir, 
         batch_size=args.batch_size, 
         patch_size=args.patch_size, 
         overlap=args.overlap, 
         norm_type=args.norm_type, 
         hue_factor=args.hue_factor, 
         augment=args.augment,
-        valid_patch_rate=args.valid_patch_rate
+        valid_patch_rate=args.valid_patch_rate,
+        test_flag=False
     )
 
-    val_loader = ScaleDataGenerator.create_validation_dataset(
+    val_dataset = ScaleDataGenerator(
+        data_dir=args.val_data_dir, 
         batch_size=args.batch_size, 
         patch_size=args.patch_size, 
         overlap=args.overlap, 
         norm_type=args.norm_type, 
         hue_factor=args.hue_factor, 
         augment=args.augment,
-        valid_patch_rate=args.valid_patch_rate
+        valid_patch_rate=args.valid_patch_rate,
+        test_flag=False
     )
 
     # Check if the datasets are empty
-    if len(train_loader.dataset) == 0:
+    if len(train_dataset) == 0:
         raise ValueError("Training dataset is empty. Please check the data directory or preprocessing steps.")
-    if len(val_loader.dataset) == 0:
+    if len(val_dataset) == 0:
         raise ValueError("Validation dataset is empty. Please check the data directory or preprocessing steps.")
+    
+    train_loader = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True, num_workers=args.num_workers)
+    val_loader = DataLoader(val_dataset, batch_size=args.batch_size, shuffle=False, num_workers=args.num_workers)
 
     return train_loader, val_loader
 
@@ -108,17 +116,17 @@ def main(args):
 
         # Trainer
         trainer = Trainer(
+                    # resume_from_checkpoint= args.checkpoint_file if args.checkpoint_file else None,
                     max_epochs=args.num_epochs,
                     accelerator="gpu",
                     devices=2, 
                     precision=32,
                     logger=wandb_logger,
                     callbacks=[checkpoint_callback, early_stop_callback],
-                    resume_from_checkpoint=args.checkpoint_file if args.checkpoint_file else None,
                 )
 
         # Training
-        trainer.fit(lit_model, train_dataloaders=train_loader, val_dataloaders=val_loader)
+        trainer.fit(lit_model, train_dataloaders=train_loader, val_dataloaders=val_loader, ckpt_path=args.checkpoint_file)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Train U-Transformer model for segmentation.')
@@ -139,7 +147,7 @@ if __name__ == '__main__':
     training_group = parser.add_argument_group('Training')
     training_group.add_argument('--batch_size', type=int, default=16, help='Batch size for training')
     training_group.add_argument('--learning_rate', type=float, default=1e-3, help='Learning rate')
-    training_group.add_argument('--num_epochs', type=int, default=3, help='Number of epochs to train')
+    training_group.add_argument('--num_epochs', type=int, default=100, help='Number of epochs to train')
     training_group.add_argument('--dynamic_valid_patch_rate', default=True, type=lambda x: (str(x).lower() == 'true'), help='Dynamically update valid_patch_rate each epoch')
 
     # Checkpoint and logging arguments
@@ -154,4 +162,4 @@ if __name__ == '__main__':
     main(args)
 
 
-# python training_scale.py --name_id "scale_experiment" --checkpoint_file "/u/nathanj/DARPA_pytorch/checkpoints/Utransformer_256_32_w_val_constant_rate/u-transformer-val/loss=0.29.ckpt"
+# python training_scale.py --name_id "scale_experiment" --checkpoint_file "/projects/bcxi/nathanj/DARPA_pytorch/checkpoints/Utransformer_256_32_w_val_constant_rate/u-transformer-val/loss=0.29.ckpt"
