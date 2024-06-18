@@ -3,6 +3,10 @@ from torch import nn
 import torch.nn.functional as F
 import math
 import numpy as np
+import pytorch_lightning as pl
+from torchmetrics.functional import jaccard_index
+import torch.nn as nn
+import mlflow
 
 
 class DoubleConv(nn.Module):
@@ -320,4 +324,80 @@ class U_Transformer(nn.Module):
         x = self.up2(x, x2)
         x = self.up3(x, x1)
         logits = self.outc(x)
+        return logits
+    
+
+class U_Transformer_Lightning(pl.LightningModule):
+    def __init__(self, in_channels, classes, bilinear=True, learning_rate=1e-3):
+        super().__init__()
+        self.save_hyperparameters()  # This will save hyperparameters to self.hparams
+        self.in_channels = in_channels
+        self.classes = classes
+        self.bilinear = bilinear
+        self.criterion = nn.CrossEntropyLoss()
+
+        # Initialize the components as before
+        self.inc = DoubleConv(in_channels, 64)
+        self.down1 = Down(64, 128)
+        self.down2 = Down(128, 256)
+        self.down3 = Down(256, 512)
+        self.MHSA = MultiHeadSelfAttention(512)
+        self.up1 = TransformerUp(512, 256)
+        self.up2 = TransformerUp(256, 128)
+        self.up3 = TransformerUp(128, 64)
+        self.outc = OutConv(64, classes)
+
+    def forward(self, x):
+        # Same as your existing forward method
+        x1 = self.inc(x)
+        x2 = self.down1(x1)
+        x3 = self.down2(x2)
+        x4 = self.down3(x3)
+        x4 = self.MHSA(x4)
+        x = self.up1(x4, x3)
+        x = self.up2(x, x2)
+        x = self.up3(x, x1)
+        logits = self.outc(x)
+        return logits
+
+    def dice_loss(self, pred, target):
+        smooth = 1.
+        pred = torch.sigmoid(pred)
+        intersection = (pred * target).sum(dim=(2,3))
+        loss = 1 - ((2. * intersection + smooth) / (pred.sum(dim=(2,3)) + target.sum(dim=(2,3)) + smooth))
+        return loss.mean()
+
+    def training_step(self, batch, batch_idx):
+        x, y = batch
+        logits = self(x)
+        loss = self.criterion(logits, y)
+        dice_loss = self.dice_loss(logits, y)
+        # jaccard_index_value = jaccard_index(logits.argmax(dim=1), y, task="multiclass", num_classes=2)
+        self.log('train_crossent', loss, on_epoch=True, on_step=False, prog_bar=True, sync_dist=True)
+        self.log('train_loss', dice_loss, on_epoch=True, on_step=False, prog_bar=True, sync_dist=True)
+        mlflow.log_metric('train_crossent', loss.item(), step=self.global_step)
+        mlflow.log_metric('train_loss', dice_loss.item(), step=self.global_step)
+        # self.log('train/jaccard_index', jaccard_index_value, on_epoch=True, on_step=False, prog_bar=True, sync_dist=True)
+        return {"loss": loss, "dice_loss": dice_loss}
+
+    def configure_optimizers(self):
+        optimizer = torch.optim.Adam(self.parameters(), lr=self.hparams.learning_rate)
+        return optimizer
+
+    def validation_step(self, batch, batch_idx):
+        x, y = batch
+        logits = self(x)
+        loss = self.criterion(logits, y)
+        dice_loss = self.dice_loss(logits, y)
+        # jaccard_index_value = jaccard_index(logits.argmax(dim=1), y, task="multiclass", num_classes=2)
+        self.log('val_crossent', loss, on_epoch=True, on_step=False, prog_bar=True, sync_dist=True)
+        self.log('val_loss', dice_loss, on_epoch=True, on_step=False, prog_bar=True, sync_dist=True)
+        mlflow.log_metric('val_crossent', loss.item(), step=self.global_step)
+        mlflow.log_metric('val_loss', dice_loss.item(), step=self.global_step)
+        # self.log('val/jaccard_index', jaccard_index_value, on_epoch=True, on_step=False, prog_bar=True, sync_dist=True)
+        return {"loss": loss, "dice_loss": dice_loss}
+
+    def test_step(self, batch, batch_idx):
+        x, y = batch
+        logits = self(x)
         return logits
