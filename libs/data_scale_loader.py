@@ -50,15 +50,16 @@ class ScaleDataGenerator(Dataset):
             sub_dir = os.path.join(h5_dir, str(size), str(self.overlap))
             size_mapsh5i = {}
             files_name = [f for f in glob.glob(os.path.join(sub_dir, "*.hdf5")) if os.path.basename(f) not in exclude_files]
+
+            if(self.test_flag):
+                files_name = files_name[:2]
+
             for file in files_name:
                 path = os.path.join(sub_dir, file)
                 mapname = os.path.basename(path).replace(".hdf5", "")
                 size_mapsh5i[mapname] = H5Image(path, "r")
             mapsh5i[size] = size_mapsh5i  
         map_names = list(mapsh5i[self.patch_size].keys())  # Default to input patch size for map_names
-
-        if(self.test_flag):
-            map_names = map_names[:2]
 
         return mapsh5i, map_names
 
