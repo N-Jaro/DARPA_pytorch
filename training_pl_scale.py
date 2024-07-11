@@ -5,19 +5,19 @@ from datetime import datetime
 import torch
 import pytorch_lightning as pl
 from pytorch_lightning import Trainer
-from pytorch_lightning.callbacks import ModelCheckpoint
+from pytorch_lightning.callbacks import ModelCheckpoint, Callback
 from pytorch_lightning.callbacks.early_stopping import EarlyStopping
 from pytorch_lightning.loggers import WandbLogger, MLFlowLogger
 from torch.utils.data import DataLoader
 
 import wandb
 import mlflow
-from mlflow.models.signature import infer_signature
 
 from models.unet import UNet
 from models.unetTransformer import U_Transformer, U_Transformer_Lightning
 
-from libs.Dataset_val import PatchDataGenerator
+# from libs.data_module import PatchDataModule
+from libs.data_scale_loader import ScaleDataGenerator
 from libs.callbacks import ValidPatchRateCallback
 from models.lit_training import LitTraining
 
@@ -27,19 +27,21 @@ tracking_uri = "https://criticalmaas.software-dev.ncsa.illinois.edu/"
 os.environ['MLFLOW_TRACKING_USERNAME'] = 'ncsa'
 os.environ['MLFLOW_TRACKING_PASSWORD'] = 'hydrohpc'
 mlflow.set_tracking_uri(uri=tracking_uri)
-# mlflow.pytorch.autolog()
+mlflow.set_experiment("nathan")
 
 
 def initialize_data_loaders(args):
-    train_dataset = PatchDataGenerator(
+
+    train_dataset = ScaleDataGenerator(
         data_dir=args.train_data_dir, 
+        batch_size=args.batch_size, 
         patch_size=args.patch_size, 
         overlap=args.overlap, 
         norm_type=args.norm_type, 
         hue_factor=args.hue_factor, 
         augment=args.augment,
         valid_patch_rate=args.valid_patch_rate,
-        test=args.test
+        test_flag=args.test
     )
 
     val_dataset = PatchDataGenerator(
@@ -58,7 +60,7 @@ def initialize_data_loaders(args):
         raise ValueError("Training dataset is empty. Please check the data directory or preprocessing steps.")
     if len(val_dataset) == 0:
         raise ValueError("Validation dataset is empty. Please check the data directory or preprocessing steps.")
-
+    
     train_loader = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True, num_workers=args.num_workers)
     val_loader = DataLoader(val_dataset, batch_size=args.batch_size, shuffle=False, num_workers=args.num_workers)
 
@@ -75,7 +77,7 @@ def main(args):
     mlflow.set_experiment(args.project_name)
 
     # Start an MLflow run
-    with mlflow.star0t_run(run_name = name_id) as run:
+    with mlflow.start_run(run_name = name_id) as run:
 
         mlflow_logger = MLFlowLogger(
             tracking_uri=tracking_uri,
@@ -86,22 +88,24 @@ def main(args):
 
         # Config for wandb
         config = {
-                    'batch_size': args.batch_size,
-                    'learning_rate': args.learning_rate,
-                    'num_epochs': args.num_epochs,
-                    'patch_size': args.patch_size,
-                    'overlap': args.overlap,
-                    'norm_type': args.norm_type,
-                    'hue_factor': args.hue_factor,
-                    'valid_patch_rate': args.valid_patch_rate,
-                    'augment': args.augment,
-                    'num_workers': args.num_workers,
-                    'dynamic_valid_patch_rate': args.dynamic_valid_patch_rate
-                }
+            'checkpoint_file':args.checkpoint_file,
+            'batch_size': args.batch_size,
+            'learning_rate': args.learning_rate,
+            'num_epochs': args.num_epochs,
+            'patch_size': args.patch_size,
+            'overlap': args.overlap,
+            'norm_type': args.norm_type,
+            'hue_factor': args.hue_factor,
+            'valid_patch_rate': args.valid_patch_rate,
+            'augment': args.augment,
+            'num_workers': args.num_workers,
+            'dynamic_valid_patch_rate': args.dynamic_valid_patch_rate
+        }
 
         # Log parameters
         mlflow.log_params(config)
 
+        
         # Initialize Wandb logger
         wandb_logger = WandbLogger( project=args.project_name,
                                     sync_tensorboard=False,
@@ -118,28 +122,30 @@ def main(args):
         )
 
         early_stop_callback = EarlyStopping(monitor="val_loss", min_delta=0.00, patience=50, verbose=True, mode="min")
+        
 
         # Initialize model
         model = U_Transformer_Lightning(in_channels=6, classes=2)
 
-        #load data
+        # Initialize data loaders
         train_loader, val_loader = initialize_data_loaders(args)
-
+        
+        
         # Trainer
         trainer = Trainer(
                     max_epochs=args.num_epochs,
                     accelerator="gpu",
-                    strategy="ddp",
                     devices=3, 
                     precision= 32,
                     num_nodes=1,
+                    strategy="ddp",
                     log_every_n_steps=1,
                     logger=[wandb_logger, mlflow_logger],
-                    callbacks=[checkpoint_callback, early_stop_callback],9854 22f
+                    callbacks=[checkpoint_callback, early_stop_callback],
                 )
 
         # Training
-        trainer.fit(model, train_dataloaders = train_loader, val_dataloaders = val_loader)
+        trainer.fit(model, train_dataloaders=train_loader, val_dataloaders=val_loader, ckpt_path=args.checkpoint_file)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Train U-Transformer model for segmentation.')
@@ -160,16 +166,34 @@ if __name__ == '__main__':
     training_group = parser.add_argument_group('Training')
     training_group.add_argument('--batch_size', type=int, default=16, help='Batch size for training')
     training_group.add_argument('--learning_rate', type=float, default=1e-3, help='Learning rate')
-    training_group.add_argument('--num_epochs', type=int, default=150, help='Number of epochs to train')
+    training_group.add_argument('--num_epochs', type=int, default=100, help='Number of epochs to train')
     training_group.add_argument('--dynamic_valid_patch_rate', default=True, type=lambda x: (str(x).lower() == 'true'), help='Dynamically update valid_patch_rate each epoch')
 
     # Checkpoint and logging arguments
     log_group = parser.add_argument_group('Logging')
     log_group.add_argument('--checkpoint_dir', type=str, default='checkpoints', help='Directory to save checkpoints')
-    log_group.add_argument('--project_name', type=str, default='U_Transformer_Segmentation', help='WandB project name')
-    log_group.add_argument('--name_id', type=str, default='utransformer_experiment_pl', help='WandB run name')
+    log_group.add_argument('--checkpoint_file', type=str, default=None, help='Path to the checkpoint file to resume training')
+    log_group.add_argument('--project_name', type=str, default='U_Transformer_Segmentation_scales', help='WandB project name')
+    log_group.add_argument('--name_id', type=str, default='experiment', help='WandB run name')
     log_group.add_argument('--test', default=False, type=lambda x: (str(x).lower() == 'true'), help='Test flag')
 
     args = parser.parse_args()
 
     main(args)
+
+
+# python training_pl_scale.py --name_id "scale_experiment_test_1" --checkpoint_file "/projects/bcxi/nathanj/DARPA_pytorch/checkpoints/utransformer_experiment_pl_20240705_113001/best_model.ckpt" --test True
+
+
+############################# New output #############################
+# original Utransformer experiment
+# checkpoint Path: '/projects/bcxi/nathanj/DARPA_pytorch/checkpoints/utransformer_experiment_pl_20240705_113001/best_model.ckpt'
+# project: U_Transformer_Segmentation
+# run_id: u3wvt6vj
+
+
+############################# Old non-sigmoid ouput #############################
+# original Utransformer experiment
+# checkpoint Path: '/projects/bcxi/nathanj/DARPA_pytorch/checkpoints/utransformer_experiment_pl_20240618_140955/best_model.ckpt'
+# project: U_Transformer_Segmentation
+# run_id: 32robwvu

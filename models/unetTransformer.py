@@ -4,7 +4,9 @@ import torch.nn.functional as F
 import math
 import numpy as np
 import pytorch_lightning as pl
+import torch.optim.lr_scheduler as lr_scheduler
 from torchmetrics.functional import jaccard_index
+from torchmetrics.classification import BinaryAccuracy
 import torch.nn as nn
 import mlflow
 
@@ -334,7 +336,10 @@ class U_Transformer_Lightning(pl.LightningModule):
         self.in_channels = in_channels
         self.classes = classes
         self.bilinear = bilinear
+        self.learning_rate = learning_rate
+        self.accuracy = BinaryAccuracy()
         self.criterion = nn.CrossEntropyLoss()
+
 
         # Initialize the components as before
         self.inc = DoubleConv(in_channels, 64)
@@ -362,42 +367,60 @@ class U_Transformer_Lightning(pl.LightningModule):
 
     def dice_loss(self, pred, target):
         smooth = 1.
-        pred = torch.sigmoid(pred)
-        intersection = (pred * target).sum(dim=(2,3))
-        loss = 1 - ((2. * intersection + smooth) / (pred.sum(dim=(2,3)) + target.sum(dim=(2,3)) + smooth))
+        intersection = (pred * target).sum(dim=(1, 2))
+        loss = 1 - ((2. * intersection + smooth) / (pred.sum(dim=(1, 2)) + target.sum(dim=(1, 2)) + smooth))
         return loss.mean()
+
+    def configure_optimizers(self):
+        optimizer = torch.optim.Adam(self.parameters(), lr=self.learning_rate)
+        return optimizer
 
     def training_step(self, batch, batch_idx):
         x, y = batch
+        y = y.squeeze(1).long()  # Ensure target is the correct shape and type
         logits = self(x)
-        loss = self.criterion(logits, y)
-        dice_loss = self.dice_loss(logits, y)
-        # jaccard_index_value = jaccard_index(logits.argmax(dim=1), y, task="multiclass", num_classes=2)
-        self.log('train_crossent', loss, on_epoch=True, on_step=False, prog_bar=True, sync_dist=True)
-        self.log('train_loss', dice_loss, on_epoch=True, on_step=False, prog_bar=True, sync_dist=True)
-        mlflow.log_metric('train_crossent', loss.item(), step=self.global_step)
-        mlflow.log_metric('train_loss', dice_loss.item(), step=self.global_step)
-        # self.log('train/jaccard_index', jaccard_index_value, on_epoch=True, on_step=False, prog_bar=True, sync_dist=True)
-        return {"loss": loss, "dice_loss": dice_loss}
 
-    def configure_optimizers(self):
-        optimizer = torch.optim.Adam(self.parameters(), lr=self.hparams.learning_rate)
-        return optimizer
+        loss = self.criterion(logits, y)  # Pass raw logits to the loss function
+        dice_loss_value = self.dice_loss(logits.argmax(dim=1), y)
+        accuracy_value = self.accuracy(logits.argmax(dim=1), y)
+        jaccard_index_value = jaccard_index(logits.argmax(dim=1), y, task="multiclass", num_classes=2)
+
+        self.log('train_loss', loss, on_epoch=True, on_step=False, prog_bar=True, sync_dist=True)
+        self.log('train_dice_loss', dice_loss_value, on_epoch=True, on_step=False, prog_bar=True, sync_dist=True)
+        self.log('train_accuracy', accuracy_value, on_epoch=True, on_step=False, prog_bar=True, sync_dist=True)
+        self.log('train_jaccard_index', jaccard_index_value, on_epoch=True, on_step=False, prog_bar=True, sync_dist=True)
+
+        mlflow.log_metric('train_loss', loss.item(), step=self.global_step)
+        mlflow.log_metric('train_dice_loss', dice_loss_value.item(), step=self.global_step)
+        mlflow.log_metric('train_accuracy', accuracy_value.item(), step=self.global_step)
+        mlflow.log_metric('train_jaccard_index', jaccard_index_value.item(), step=self.global_step)
+
+        return {"loss": loss, "dice_loss": dice_loss_value, "accuracy": accuracy_value, "jaccard_index_value": jaccard_index_value}
 
     def validation_step(self, batch, batch_idx):
         x, y = batch
+        y = y.squeeze(1).long()  # Ensure target is the correct shape and type
         logits = self(x)
-        loss = self.criterion(logits, y)
-        dice_loss = self.dice_loss(logits, y)
-        # jaccard_index_value = jaccard_index(logits.argmax(dim=1), y, task="multiclass", num_classes=2)
-        self.log('val_crossent', loss, on_epoch=True, on_step=False, prog_bar=True, sync_dist=True)
-        self.log('val_loss', dice_loss, on_epoch=True, on_step=False, prog_bar=True, sync_dist=True)
-        mlflow.log_metric('val_crossent', loss.item(), step=self.global_step)
-        mlflow.log_metric('val_loss', dice_loss.item(), step=self.global_step)
-        # self.log('val/jaccard_index', jaccard_index_value, on_epoch=True, on_step=False, prog_bar=True, sync_dist=True)
-        return {"loss": loss, "dice_loss": dice_loss}
+
+        loss = self.criterion(logits, y)  # Pass raw logits to the loss function
+        dice_loss_value = self.dice_loss(logits.argmax(dim=1), y)
+        accuracy_value = self.accuracy(logits.argmax(dim=1), y)
+        jaccard_index_value = jaccard_index(logits.argmax(dim=1), y, task="multiclass", num_classes=2)
+
+        self.log('val_loss', loss, on_epoch=True, on_step=False, prog_bar=True, sync_dist=True)
+        self.log('val_dice_loss', dice_loss_value, on_epoch=True, on_step=False, prog_bar=True, sync_dist=True)
+        self.log('val_accuracy', accuracy_value, on_epoch=True, on_step=False, prog_bar=True, sync_dist=True)
+        self.log('val_jaccard_index', jaccard_index_value, on_epoch=True, on_step=False, prog_bar=True, sync_dist=True)
+
+        mlflow.log_metric('val_loss', loss.item(), step=self.global_step)
+        mlflow.log_metric('val_dice_loss', dice_loss_value.item(), step=self.global_step)
+        mlflow.log_metric('val_accuracy', accuracy_value.item(), step=self.global_step)
+        mlflow.log_metric('val_jaccard_index', jaccard_index_value.item(), step=self.global_step)
+
+        return {"loss": loss, "dice_loss": dice_loss_value, "accuracy": accuracy_value, "jaccard_index_value": jaccard_index_value}
+
 
     def test_step(self, batch, batch_idx):
         x, y = batch
         logits = self(x)
-        return logits
+        return logits[:,-1,]
